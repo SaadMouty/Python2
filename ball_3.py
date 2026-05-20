@@ -39,8 +39,20 @@ def create_ball(scene_objects):
 
     string_color = vector(0.08, 0.08, 0.09)
 
-    c1 = cylinder(pos=anchor_left, axis=attach_left - anchor_left, radius=string_r, color=string_color, shininess=0.1)
-    c2 = cylinder(pos=anchor_right, axis=attach_right - anchor_right, radius=string_r, color=string_color, shininess=0.1)
+    c1 = cylinder(
+        pos=anchor_left,
+        axis=attach_left - anchor_left,
+        radius=string_r,
+        color=string_color,
+        shininess=0.1,
+    )
+    c2 = cylinder(
+        pos=anchor_right,
+        axis=attach_right - anchor_right,
+        radius=string_r,
+        color=string_color,
+        shininess=0.1,
+    )
 
     return {
         "id": idx,
@@ -52,4 +64,10 @@ def create_ball(scene_objects):
         "attach_left": attach_left,
         "attach_right": attach_right,
         "radius": ball_r,
+        # physics properties (to be updated later)
+        "mass": 1.0,
+        "length": rail_y - ball_center_y,
+        "angle": 0.0,
+        "angular_velocity": 0.0,
+        "angular_acceleration": 0.0,
     }

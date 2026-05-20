@@ -73,4 +73,11 @@ def create_ball(scene_objects):
         "attach_left": attach_left,
         "attach_right": attach_right,
         "radius": ball_r,
+        
+        # physics properties (to be updated later)
+        "mass": 1.0,
+        "length": rail_y - ball_center_y,
+        "angle": 0.0,
+        "angular_velocity": 0.0,
+        "angular_acceleration": 0.0,
     }

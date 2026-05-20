@@ -9,11 +9,11 @@ from vpython import (
     canvas, vector, box, cylinder, textures, distant_light, local_light
 )
 
-from ball_1 import create_ball as create_ball_1
-from ball_2 import create_ball as create_ball_2
-from ball_3 import create_ball as create_ball_3
-from ball_4 import create_ball as create_ball_4
-from ball_5 import create_ball as create_ball_5
+from .ball_1 import create_ball as create_ball_1
+from .ball_2 import create_ball as create_ball_2
+from .ball_3 import create_ball as create_ball_3
+from .ball_4 import create_ball as create_ball_4
+from .ball_5 import create_ball as create_ball_5
 
 
 def v(x, y, z):
