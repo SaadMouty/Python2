@@ -15,8 +15,13 @@ RESTITUTION = 0.999  # 1.0 = perfectly elastic
 # INITIALIZATION
 # =========================
 def initialize_ball_physics(ball):
+    ball["pivot"] = (
+        ball["anchor_left"]
+        + ball["anchor_right"]
+    ) / 2
+
     ball["length"] = (
-        ball["anchor_left"].y
+        ball["pivot"].y
         - ball["sphere"].pos.y
     )
 
@@ -46,10 +51,11 @@ def update_physics(ball, dt):
     ball["angle"] += ball["angular_velocity"] * dt
 
     # position update
-    x = ball["anchor_left"].x + ball["length"] * math.sin(ball["angle"])
-    y = ball["anchor_left"].y - ball["length"] * math.cos(ball["angle"])
+    pivot = ball["pivot"]
+    x = pivot.x + ball["length"] * math.sin(ball["angle"])
+    y = pivot.y - ball["length"] * math.cos(ball["angle"])
 
-    ball["sphere"].pos = vector(x, y, 0)
+    ball["sphere"].pos = vector(x, y, pivot.z)
 
     update_strings(ball)
 
@@ -81,6 +87,13 @@ def reset_ball(ball, angle=0.0):
     ball["angle"] = angle
     ball["angular_velocity"] = 0.0
     ball["angular_acceleration"] = 0.0
+
+    pivot = ball["pivot"]
+    x = pivot.x + ball["length"] * math.sin(ball["angle"])
+    y = pivot.y - ball["length"] * math.cos(ball["angle"])
+
+    ball["sphere"].pos = vector(x, y, pivot.z)
+    update_strings(ball)
 
 
 # =========================================================
@@ -165,8 +178,15 @@ def update_system(balls, dt):
 
     # 2. collision pass (important: after movement)
     for i in range(len(balls) - 1):
-        a = balls[i]
-        b = balls[i + 1]
+        a = balls[i]                       # left ball
+        b = balls[i + 1]                   # right ball
 
-        if check_collision(a, b):
+        if not check_collision(a, b):
+            continue
+
+        # Only resolve when the balls are actually approaching each other.
+        # 'a' is left of 'b', so they close in when a moves right faster
+        # than b (tangential velocity is +x). Without this guard the same
+        # overlap is resolved every frame and the balls stick together.
+        if tangential_velocity(a) > tangential_velocity(b):
             resolve_collision(a, b)

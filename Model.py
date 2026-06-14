@@ -9,11 +9,11 @@ from vpython import (
     canvas, vector, box, cylinder, textures, distant_light, local_light
 )
 
-from .ball_1 import create_ball as create_ball_1
-from .ball_2 import create_ball as create_ball_2
-from .ball_3 import create_ball as create_ball_3
-from .ball_4 import create_ball as create_ball_4
-from .ball_5 import create_ball as create_ball_5
+from ball_1 import create_ball as create_ball_1
+from ball_2 import create_ball as create_ball_2
+from ball_3 import create_ball as create_ball_3
+from ball_4 import create_ball as create_ball_4
+from ball_5 import create_ball as create_ball_5
 
 
 def v(x, y, z):
@@ -173,9 +173,51 @@ def build_scene():
 
 
 if __name__ == "__main__":
+    from vpython import rate, slider, button, wtext
+
+    from physics import initialize_ball_physics, reset_ball, update_system
+
     scene, balls = build_scene()
 
-    # Keep the program alive so the VPython browser window doesn't immediately close.
-    from vpython import rate
+    # Wire each static ball from the model up to the physics engine.
+    for ball in balls:
+        initialize_ball_physics(ball)
+
+    # -------------------------
+    # Controls
+    # -------------------------
+    # "speed" is the linear release speed (m/s) given to ball 1. It is
+    # converted to the pendulum's angular velocity via v = L * omega.
+    state = {"speed": 1.0}
+
+    def launch(_=None):
+        # Reset everything to rest, then kick ball 1 to the right (+x,
+        # toward the group) with the chosen release speed.
+        for b in balls:
+            reset_ball(b, angle=0.0)
+        balls[0]["angular_velocity"] = state["speed"] / balls[0]["length"]
+
+    def reset_all(_=None):
+        for b in balls:
+            reset_ball(b, angle=0.0)
+
+    def set_speed(sl):
+        state["speed"] = sl.value
+        speed_readout.text = f"  Release speed: {sl.value:.2f} m/s"
+
+    scene.append_to_caption("\n\n")
+    slider(min=0.0, max=3.0, value=state["speed"], step=0.05,
+           length=320, bind=set_speed)
+    speed_readout = wtext(text=f"  Release speed: {state['speed']:.2f} m/s")
+    scene.append_to_caption("\n\n")
+    button(text="Release ball 1", bind=launch)
+    scene.append_to_caption("    ")
+    button(text="Reset", bind=reset_all)
+    scene.append_to_caption("\n\n")
+
+    # Simulation loop. A high fps keeps the near-instant collisions crisp.
+    fps = 240
+    dt = 1.0 / fps
     while True:
-        rate(60)
+        rate(fps)
+        update_system(balls, dt)
