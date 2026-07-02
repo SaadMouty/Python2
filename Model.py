@@ -20,11 +20,6 @@ def v(x, y, z):
     return vector(x, y, z)
 
 
-def metallic_silver():
-    # Use this in ball files (included here for consistency/reference)
-    return vector(0.82, 0.83, 0.86)
-
-
 def metallic_black():
     # Dark gunmetal; reads as metallic black in VPython with high shininess
     return vector(0.12, 0.12, 0.14)
@@ -151,13 +146,10 @@ def build_scene():
     # Provide shared geometry to ball modules
     # -------------------------
     scene_objects = {
-        "vector": vector,
         "rail_y": rail_y,
         "rail_front_z": rail_front.pos.z,
         "rail_back_z": rail_back.pos.z,
         "base_h": base_h,
-        # Optional: let ball modules use a consistent silver if you choose to
-        "ball_color": metallic_silver(),
     }
 
     # Build 5 standalone balls (each in its own file)
@@ -173,9 +165,18 @@ def build_scene():
 
 
 if __name__ == "__main__":
+    import math
     from vpython import rate, slider, button, wtext
 
-    from physics import initialize_ball_physics, reset_ball, update_system
+    from physics import (
+        initialize_ball_physics,
+        kinetic_energy,
+        potential_energy,
+        reset_ball,
+        tangential_velocity,
+        total_energy,
+        update_system,
+    )
 
     scene, balls = build_scene()
 
@@ -213,11 +214,44 @@ if __name__ == "__main__":
     button(text="Release ball 1", bind=launch)
     scene.append_to_caption("    ")
     button(text="Reset", bind=reset_all)
+    scene.append_to_caption("\n\nPhysical statistics:\n")
+    stats_readout = wtext(text="")
+
+    def update_stats(elapsed_time):
+        total_ke = sum(kinetic_energy(ball) for ball in balls)
+        total_pe = sum(potential_energy(ball) for ball in balls)
+        total_e = sum(total_energy(ball) for ball in balls)
+
+        rows = [
+            f"Time: {elapsed_time:5.2f} s",
+            f"Total kinetic energy:   {total_ke:.5f} J",
+            f"Total potential energy: {total_pe:.5f} J",
+            f"Total energy:           {total_e:.5f} J",
+            "",
+            "Ball   angle(deg)   speed(m/s)",
+        ]
+
+        for ball in balls:
+            rows.append(
+                f"{ball['id']:>2}     "
+                f"{math.degrees(ball['angle']):>8.2f}     "
+                f"{tangential_velocity(ball):>8.3f}"
+            )
+
+        stats_readout.text = "<pre>" + "\n".join(rows) + "</pre>"
     scene.append_to_caption("\n\n")
 
     # Simulation loop. A high fps keeps the near-instant collisions crisp.
     fps = 240
     dt = 1.0 / fps
+    elapsed_time = 0.0
+    frame_count = 0
+    update_stats(elapsed_time)
+
     while True:
         rate(fps)
         update_system(balls, dt)
+        elapsed_time += dt
+        frame_count += 1
+        if frame_count % 6 == 0:
+            update_stats(elapsed_time)
