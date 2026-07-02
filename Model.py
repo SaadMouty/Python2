@@ -187,16 +187,17 @@ if __name__ == "__main__":
     # -------------------------
     # Controls
     # -------------------------
-    # "speed" is the linear release speed (m/s) given to ball 1. It is
-    # converted to the pendulum's angular velocity via v = L * omega.
-    state = {"speed": 1.0}
+    # "speed" is the linear release speed (m/s) given to the starting balls.
+    # It is converted to angular velocity via v = L * omega.
+    state = {"speed": 1.0, "release_count": 1}
 
     def launch(_=None):
-        # Reset everything to rest, then kick ball 1 to the right (+x,
-        # toward the group) with the chosen release speed.
+        # Reset everything to rest, then kick the chosen number of left-side
+        # balls to the right (+x, toward the group).
         for b in balls:
             reset_ball(b, angle=0.0)
-        balls[0]["angular_velocity"] = state["speed"] / balls[0]["length"]
+        for b in balls[:state["release_count"]]:
+            b["angular_velocity"] = state["speed"] / b["length"]
 
     def reset_all(_=None):
         for b in balls:
@@ -206,24 +207,38 @@ if __name__ == "__main__":
         state["speed"] = sl.value
         speed_readout.text = f"  Release speed: {sl.value:.2f} m/s"
 
+    def set_release_count(sl):
+        state["release_count"] = int(sl.value)
+        release_count_readout.text = (
+            f"  Balls released: {state['release_count']}"
+        )
+
     scene.append_to_caption("\n\n")
     slider(min=0.0, max=3.0, value=state["speed"], step=0.05,
            length=320, bind=set_speed)
     speed_readout = wtext(text=f"  Release speed: {state['speed']:.2f} m/s")
     scene.append_to_caption("\n\n")
-    button(text="Release ball 1", bind=launch)
+    slider(min=1, max=4, value=state["release_count"], step=1,
+           length=320, bind=set_release_count)
+    release_count_readout = wtext(
+        text=f"  Balls released: {state['release_count']}"
+    )
+    scene.append_to_caption("\n\n")
+    button(text="Release", bind=launch)
     scene.append_to_caption("    ")
     button(text="Reset", bind=reset_all)
-    scene.append_to_caption("\n\nPhysical statistics:\n")
-    stats_readout = wtext(text="")
+    scene.append_to_caption("\n\n")
 
-    def update_stats(elapsed_time):
+    stats_panel = wtext(text="")
+
+    def update_stats():
         total_ke = sum(kinetic_energy(ball) for ball in balls)
         total_pe = sum(potential_energy(ball) for ball in balls)
         total_e = sum(total_energy(ball) for ball in balls)
 
         rows = [
-            f"Time: {elapsed_time:5.2f} s",
+            "Physical statistics",
+            "",
             f"Total kinetic energy:   {total_ke:.5f} J",
             f"Total potential energy: {total_pe:.5f} J",
             f"Total energy:           {total_e:.5f} J",
@@ -238,20 +253,37 @@ if __name__ == "__main__":
                 f"{tangential_velocity(ball):>8.3f}"
             )
 
-        stats_readout.text = "<pre>" + "\n".join(rows) + "</pre>"
-    scene.append_to_caption("\n\n")
+        stats_panel.text = (
+            "<pre style='"
+            "position: fixed;"
+            "right: 24px;"
+            "top: 90px;"
+            "z-index: 9999;"
+            "margin: 0;"
+            "padding: 14px 16px;"
+            "width: 330px;"
+            "background: #ffffff;"
+            "color: #000000;"
+            "border: 2px solid #000000;"
+            "border-radius: 8px;"
+            "font: 13px monospace;"
+            "line-height: 1.35;"
+            "white-space: pre;"
+            "text-align: left;"
+            "'>"
+            + "\n".join(rows)
+            + "</pre>"
+        )
 
     # Simulation loop. A high fps keeps the near-instant collisions crisp.
     fps = 240
     dt = 1.0 / fps
-    elapsed_time = 0.0
     frame_count = 0
-    update_stats(elapsed_time)
+    update_stats()
 
     while True:
         rate(fps)
         update_system(balls, dt)
-        elapsed_time += dt
         frame_count += 1
         if frame_count % 6 == 0:
-            update_stats(elapsed_time)
+            update_stats()
